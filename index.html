@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Count Up with Grid Background</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #121212;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            position: relative;
+            color: white;
+        }
+        .grid {
+            position: absolute;
+            display: grid;
+            grid-template-columns: repeat(10, 80px);
+            grid-template-rows: repeat(10, 80px);
+            gap: 5px;
+        }
+        .square {
+            width: 80px;
+            height: 80px;
+            border-radius: 4px;
+            opacity: 0;
+            transform: translateY(50px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            position: relative;
+            perspective: 800px;
+        }
+        .inner {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            transform-style: preserve-3d;
+            transition: transform 0.8s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: bold;
+            color: white;
+        }
+        .front, .back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .front {
+            background-color: rgba(50, 50, 50, 0.3);
+        }
+        .back {
+            background-color: #272727;
+            transform: rotateY(180deg);
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+        .back::after {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            transition: opacity 0.3s ease;
+        }
+        .square:hover .back::after {
+            opacity: 0;
+        }
+        .number-square .back::after {
+            background: none;
+        }
+        .flipped .inner {
+            transform: rotateY(180deg);
+        }
+    </style>
+</head>
+<body>
+    <div class="grid"></div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            const grid = document.querySelector(".grid");
+            let squares = [];
+            const repoOwner = "ashunine";
+            const repoName = "countup-grid-images";
+            const folderPath = "";
+
+            async function getImageUrls() {
+                const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${folderPath}`;
+                try {
+                    const response = await fetch(apiUrl);
+                    const files = await response.json();
+                    return files
+                        .filter(file => file.name.endsWith(".png") || file.name.endsWith(".jpg") || file.name.endsWith(".jpeg"))
+                        .map(file => file.download_url);
+                } catch (error) {
+                    console.error("Error fetching images:", error);
+                    return [];
+                }
+            }
+
+            const imageUrls = await getImageUrls();
+            let loadedImages = 0;
+            let totalImages = imageUrls.length;
+            let imagesPreloaded = false;
+
+            function preloadImages(urls, callback) {
+                if (urls.length === 0) {
+                    imagesPreloaded = true;
+                    callback();
+                    return;
+                }
+                urls.forEach(url => {
+                    const img = new Image();
+                    img.src = url;
+                    img.onload = () => {
+                        loadedImages++;
+                        if (loadedImages === totalImages) {
+                            imagesPreloaded = true;
+                            callback();
+                        }
+                    };
+                });
+            }
+
+            for (let i = 0; i < 100; i++) {
+                const square = document.createElement("div");
+                square.classList.add("square");
+                
+                const inner = document.createElement("div");
+                inner.classList.add("inner");
+                
+                const front = document.createElement("div");
+                front.classList.add("front");
+                
+                const back = document.createElement("div");
+                back.classList.add("back");
+                
+                inner.appendChild(front);
+                inner.appendChild(back);
+                square.appendChild(inner);
+                grid.appendChild(square);
+                squares.push(square);
+            }
+
+            function animateSquares(index = 0) {
+                if (index < squares.length) {
+                    let batchSize = 10;
+                    let batch = squares.slice(index, index + batchSize);
+                    batch.forEach((square, i) => {
+                        setTimeout(() => {
+                            square.style.opacity = 1;
+                            square.style.transform = "translateY(0)";
+                        }, i * 50);
+                    });
+                    setTimeout(() => animateSquares(index + batchSize), 150);
+                } else {
+                    if (imagesPreloaded) {
+                        setTimeout(flipNumberSquares, 500);
+                    }
+                }
+            }
+
+            function flipNumberSquares() {
+                const centerIndexes = [43, 44, 45, 46];
+                const numbers = ["4", "5", "0", "+"];
+                
+                centerIndexes.forEach((index, i) => {
+                    squares[index].classList.add("flipped", "number-square");
+                    squares[index].querySelector(".back").textContent = numbers[i];
+                });
+                
+                setTimeout(flipImageSquares, 500);
+            }
+
+            function flipImageSquares() {
+                squares.forEach((square, i) => {
+                    if (!square.classList.contains("number-square") && imageUrls.length > 0) {
+                        let randomImage = imageUrls[Math.floor(Math.random() * imageUrls.length)];
+                        square.classList.add("flipped");
+                        square.querySelector(".back").style.backgroundImage = `url(${randomImage})`;
+                    }
+                });
+            }
+
+            preloadImages(imageUrls, () => {
+                animateSquares();
+            });
+        });
+    </script>
+</body>
+</html>

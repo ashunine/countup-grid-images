@@ -62,7 +62,7 @@
             justify-content: center;
         }
         .front {
-            background-color: rgba(50, 50, 50, 0.3);
+            background-color: rgba(50, 50, 50, 1);
         }
         .back {
             background-color: #272727;
@@ -189,14 +189,18 @@
                 setTimeout(flipImageSquares, 500);
             }
 
-            function flipImageSquares() {
-                squares.forEach((square, i) => {
-                    if (!square.classList.contains("number-square") && imageUrls.length > 0) {
-                        let randomImage = imageUrls[Math.floor(Math.random() * imageUrls.length)];
-                        square.classList.add("flipped");
-                        square.querySelector(".back").style.backgroundImage = `url(${randomImage})`;
+            function flipImageSquares(row = 0) {
+                if (row < 10) {
+                    for (let col = 0; col < 10; col++) {
+                        let index = row * 10 + col;
+                        if (!squares[index].classList.contains("number-square") && imageUrls.length > 0) {
+                            let randomImage = imageUrls[Math.floor(Math.random() * imageUrls.length)];
+                            squares[index].classList.add("flipped");
+                            squares[index].querySelector(".back").style.backgroundImage = `url(${randomImage})`;
+                        }
                     }
-                });
+                    setTimeout(() => flipImageSquares(row + 1), 150);
+                }
             }
 
             preloadImages(imageUrls, () => {
